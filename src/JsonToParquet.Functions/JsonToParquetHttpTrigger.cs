@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net;
 using JsonToParquet.Functions.Models;
+using JsonToParquet.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Storage;
@@ -8,6 +9,7 @@ using Microsoft.Azure.Storage.Blob;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Parquet.Data;
+using Parquet.Serialization;
 
 namespace JsonToParquet.Functions
 {
@@ -21,7 +23,7 @@ namespace JsonToParquet.Functions
         }
 
         [Function("JsonToParquetHttpTrigger")]
-        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
+        public async Task<HttpResponseData> RunAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -49,7 +51,15 @@ namespace JsonToParquet.Functions
                    var serengetiData = JsonConvert.DeserializeObject<SerengetiData>(json);
                    response.WriteString($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
 
+                    // Get Current Directory
+                    string folderPath = "/Volumes/Microsoft/JsonToParquet/src/JsonToParquet.Functions/Files"; 
+ 
+                    string filePath = Path.Combine(folderPath, entry.Name.Replace(".json", ".parquet"));
+
+                    _logger.LogInformation($"File Path: {filePath}");
+                    
                    // Create parquet file
+                   await ParquetFileCreator.CreateParquetFileAsync(serengetiData, filePath);
                 }
             }
 

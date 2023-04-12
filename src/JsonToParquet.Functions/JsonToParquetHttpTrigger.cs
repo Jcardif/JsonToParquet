@@ -7,6 +7,7 @@ using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Parquet.Data;
 
 namespace JsonToParquet.Functions
 {
@@ -49,7 +50,6 @@ namespace JsonToParquet.Functions
                    response.WriteString($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
 
                    // Create parquet file
-                  
                 }
             }
 

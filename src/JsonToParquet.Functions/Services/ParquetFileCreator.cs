@@ -7,7 +7,7 @@ namespace JsonToParquet.Functions.Services
 {
     public class ParquetFileCreator
     {
-        public static async Task CreateParquetFileAsync(SerengetiData data, string filePath)
+        public static async Task<Stream> CreateParquetFileAsync(SerengetiData data, Stream fileStream)
         {
             var aggregatedJoin = data.Annotations
                 .Join(data.Images, a=>a.ImageId, i=>i.Id, (a,i)=>new {
@@ -143,40 +143,41 @@ namespace JsonToParquet.Functions.Services
             var seqNumFrames = new DataColumn(
                 (DataField)schema[20],
                 aggregatedJoin.Select(a => a.SeqNumFrames).ToArray());
-   
+
             // Write the data to a Parquet file
-
-            using (Stream stream = System.IO.File.OpenWrite(filePath))
+            using (ParquetWriter writer = await ParquetWriter.CreateAsync(schema, fileStream))
             {
-                using (ParquetWriter writer = await ParquetWriter.CreateAsync(schema, stream))
-                {
-                    using (ParquetRowGroupWriter groupWriter = writer.CreateRowGroup())
-                    {
+                writer.CompressionMethod = CompressionMethod.Zstd;
+                writer.CompressionLevel = System.IO.Compression.CompressionLevel.SmallestSize;
 
-                        await groupWriter.WriteColumnAsync(sequenceLevelAnnotations);
-                        await groupWriter.WriteColumnAsync(ids);
-                        await groupWriter.WriteColumnAsync(categoryIds);
-                        await groupWriter.WriteColumnAsync(seqIds);
-                        await groupWriter.WriteColumnAsync(seasons);
-                        await groupWriter.WriteColumnAsync(datetimes);
-                        await groupWriter.WriteColumnAsync(subjectIds);
-                        await groupWriter.WriteColumnAsync(counts);
-                        await groupWriter.WriteColumnAsync(standings);
-                        await groupWriter.WriteColumnAsync(restings);
-                        await groupWriter.WriteColumnAsync(movings);
-                        await groupWriter.WriteColumnAsync(interactings);
-                        await groupWriter.WriteColumnAsync(youngPresents);
-                        await groupWriter.WriteColumnAsync(imageIds);
-                        await groupWriter.WriteColumnAsync(locations); 
-                        await groupWriter.WriteColumnAsync(fileNames);
-                        await groupWriter.WriteColumnAsync(frameNums);
-                        await groupWriter.WriteColumnAsync(widths);
-                        await groupWriter.WriteColumnAsync(heights);
-                        await groupWriter.WriteColumnAsync(corrupts);
-                        await groupWriter.WriteColumnAsync(seqNumFrames);
-                    }
+                using (ParquetRowGroupWriter groupWriter = writer.CreateRowGroup())
+                {
+
+                    await groupWriter.WriteColumnAsync(sequenceLevelAnnotations);
+                    await groupWriter.WriteColumnAsync(ids);
+                    await groupWriter.WriteColumnAsync(categoryIds);
+                    await groupWriter.WriteColumnAsync(seqIds);
+                    await groupWriter.WriteColumnAsync(seasons);
+                    await groupWriter.WriteColumnAsync(datetimes);
+                    await groupWriter.WriteColumnAsync(subjectIds);
+                    await groupWriter.WriteColumnAsync(counts);
+                    await groupWriter.WriteColumnAsync(standings);
+                    await groupWriter.WriteColumnAsync(restings);
+                    await groupWriter.WriteColumnAsync(movings);
+                    await groupWriter.WriteColumnAsync(interactings);
+                    await groupWriter.WriteColumnAsync(youngPresents);
+                    await groupWriter.WriteColumnAsync(imageIds);
+                    await groupWriter.WriteColumnAsync(locations);
+                    await groupWriter.WriteColumnAsync(fileNames);
+                    await groupWriter.WriteColumnAsync(frameNums);
+                    await groupWriter.WriteColumnAsync(widths);
+                    await groupWriter.WriteColumnAsync(heights);
+                    await groupWriter.WriteColumnAsync(corrupts);
+                    await groupWriter.WriteColumnAsync(seqNumFrames);
                 }
             }
+
+            return fileStream;
             
         }
     }

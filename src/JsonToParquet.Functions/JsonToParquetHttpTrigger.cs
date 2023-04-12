@@ -31,39 +31,93 @@ namespace JsonToParquet.Functions
             
             response.Headers.Add("Content-Type", "application/json");
 
+            var destConnectionString = "";
+
+            var sourceContainer = GetSourceContainer();
+            var destDirectory = await GetDestinationDirectoryAsync(destConnectionString);
+
+            // s01 to s011
+            var metadataZippedFiles = new string[]
+            {
+                "SnapshotSerengetiS01.json.zip",
+                "SnapshotSerengetiS02.json.zip",
+                "SnapshotSerengetiS03.json.zip",
+                "SnapshotSerengetiS04.json.zip",
+                "SnapshotSerengetiS05.json.zip",
+                "SnapshotSerengetiS06.json.zip",
+                "SnapshotSerengetiS07.json.zip",
+                "SnapshotSerengetiS08.json.zip",
+                "SnapshotSerengetiS09.json.zip",
+                "SnapshotSerengetiS10.json.zip",
+                "SnapshotSerengetiS11.json.zip",
+            };
+
+            foreach(var file in metadataZippedFiles)
+            {
+                var sourceBlob = sourceContainer.GetBlockBlobReference(file);
+                var parquetStream = await LoadDataAsync(sourceBlob);
+
+                var destBlob = destDirectory.GetBlockBlobReference(file.Replace(".zip", ".parquet"));
+                await destBlob.UploadFromStreamAsync(parquetStream);
+            }
+
+            return response;
+        }
+
+        private async Task<CloudBlobDirectory> GetDestinationDirectoryAsync(string destConnectionString)
+        {
+            // Create a FileEndpoint for the destination ADLS
+            CloudStorageAccount destStorageAccount = CloudStorageAccount.Parse(destConnectionString);
+
+            var destBlobClient = destStorageAccount.CreateCloudBlobClient();
+            var destContainer = destBlobClient.GetContainerReference("snapshot-serengeti");
+
+            if (!await destContainer.ExistsAsync())
+            {
+                await destContainer.CreateIfNotExistsAsync();
+            }
+
+            var destDirectory = destContainer.GetDirectoryReference("metadata");
+
+            return destDirectory;
+        }
+
+        private CloudBlobContainer GetSourceContainer()
+        {
             // Create a BlobEndpoint for the source container
             string sourceConnectionString = "BlobEndpoint=https://lilablobssc.blob.core.windows.net;";
             CloudStorageAccount sourceStorageAccount = CloudStorageAccount.Parse(sourceConnectionString);
             CloudBlobClient sourceBlobClient = sourceStorageAccount.CreateCloudBlobClient();
-            var sourceContainer = sourceBlobClient.GetContainerReference("snapshotserengeti-v-2-0");
+            return sourceBlobClient.GetContainerReference("snapshotserengeti-v-2-0");
+        }
 
-            var sourceBlob = sourceContainer.GetBlockBlobReference("SnapshotSerengetiS01.json.zip");
-
+        private async Task<Stream> LoadDataAsync(CloudBlockBlob sourceBlob)
+        {
             using (var sourceStream = sourceBlob.OpenRead())
             using (var archive = new ZipArchive(sourceStream))
             {
-                foreach (var entry in archive.Entries)
-                {
-                   var entryStream = entry.Open();
+                var entry = archive.Entries.First();
+                var entryStream = entry.Open();
+                var json = new StreamReader(entryStream).ReadToEnd();
 
-                   var json = new StreamReader(entryStream).ReadToEnd();
+                var serengetiData = JsonConvert.DeserializeObject<SerengetiData>(json);
 
-                   var serengetiData = JsonConvert.DeserializeObject<SerengetiData>(json);
-                   response.WriteString($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
+                _logger.LogInformation($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
 
-                    // Get Current Directory
-                    string folderPath = "/Volumes/Microsoft/JsonToParquet/src/JsonToParquet.Functions/Files"; 
- 
-                    string filePath = Path.Combine(folderPath, entry.Name.Replace(".json", ".parquet"));
+                // Get Current Directory
+                string folderPath = "/Volumes/Microsoft/JsonToParquet/src/JsonToParquet.Functions/Files";
 
-                    _logger.LogInformation($"File Path: {filePath}");
-                    
-                   // Create parquet file
-                   await ParquetFileCreator.CreateParquetFileAsync(serengetiData, filePath);
-                }
+                string filePath = Path.Combine(folderPath, entry.Name.Replace(".json", ".parquet"));
+
+                _logger.LogInformation($"File Path: {filePath}");
+
+
+                // create stream that is writable and seekable
+                var stream = new MemoryStream();
+
+                // Create parquet file
+                return await ParquetFileCreator.CreateParquetFileAsync(serengetiData, stream);
             }
-
-            return response;
         }
     }
 }

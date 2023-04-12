@@ -1,10 +1,12 @@
 using System.IO.Compression;
 using System.Net;
+using JsonToParquet.Functions.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace JsonToParquet.Functions
 {
@@ -43,7 +45,11 @@ namespace JsonToParquet.Functions
 
                    var json = new StreamReader(entryStream).ReadToEnd();
 
-                    response.WriteString(json);
+                   var serengetiData = JsonConvert.DeserializeObject<SerengetiData>(json);
+                   response.WriteString($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
+
+                   // Create parquet file
+                  
                 }
             }
 

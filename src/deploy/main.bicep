@@ -150,6 +150,9 @@ resource vaultName_ADLS_ConnectionString 'Microsoft.KeyVault/vaults/secrets@2023
   parent: vault
   name: 'ADLS-ConnectionString'
   properties: {
-    value: storageAccount.listKeys().keys[0].value
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    contentType: 'text/plain'
   }
 }
+
+

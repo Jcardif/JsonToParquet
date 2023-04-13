@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.16.2.56959",
-      "templateHash": "16987526091911781138"
+      "templateHash": "5023348027585212246"
     }
   },
   "parameters": {
@@ -184,7 +184,8 @@
       "apiVersion": "2023-02-01",
       "name": "[format('{0}/{1}', variables('vaultName'), 'ADLS-ConnectionString')]",
       "properties": {
-        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value]"
+        "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value)]",
+        "contentType": "text/plain"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",

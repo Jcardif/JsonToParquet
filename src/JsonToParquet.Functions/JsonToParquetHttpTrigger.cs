@@ -1,11 +1,14 @@
 using System.IO.Compression;
 using System.Net;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using JsonToParquet.Functions.Models;
 using JsonToParquet.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Parquet.Data;
@@ -30,8 +33,20 @@ namespace JsonToParquet.Functions
             var response = req.CreateResponse(HttpStatusCode.OK);
             
             response.Headers.Add("Content-Type", "application/json");
-            
-            var destConnectionString = "";
+
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var keyVaultName = config["KeyVaultName"];
+            var keyVaultUri = $"https://{keyVaultName}.vault.azure.net/";
+
+            var client = new SecretClient(new Uri(keyVaultUri), new DefaultAzureCredential());
+            var adlsConnStringSecret = await client.GetSecretAsync("ADLS-ConnectionString");
+
+            var destConnectionString = adlsConnStringSecret.Value.Value;
 
             var sourceContainer = GetSourceContainer();
             var destDirectory = await GetDestinationDirectoryAsync(destConnectionString);

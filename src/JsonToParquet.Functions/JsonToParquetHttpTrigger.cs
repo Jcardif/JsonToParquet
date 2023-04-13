@@ -70,10 +70,15 @@ namespace JsonToParquet.Functions
             foreach(var file in metadataZippedFiles)
             {
                 var sourceBlob = sourceContainer.GetBlockBlobReference(file);
-                var parquetStream = await LoadDataAsync(sourceBlob);
+                var destBlob = destDirectory.GetBlockBlobReference(file.Replace(".json.zip", ".parquet"));
+                
+                using (var stream = await destBlob.OpenWriteAsync())
+                {
+                    await LoadDataAsync(sourceBlob, stream);
 
-                var destBlob = destDirectory.GetBlockBlobReference(file.Replace(".zip", ".parquet"));
-                await destBlob.UploadFromStreamAsync(parquetStream);
+                    _logger.LogInformation($"Uploading {file} to {destBlob.Uri}");
+                    await stream.FlushAsync();
+                }
             }
 
             return response;
@@ -94,6 +99,7 @@ namespace JsonToParquet.Functions
 
             var destDirectory = destContainer.GetDirectoryReference("metadata");
 
+
             return destDirectory;
         }
 
@@ -106,7 +112,7 @@ namespace JsonToParquet.Functions
             return sourceBlobClient.GetContainerReference("snapshotserengeti-v-2-0");
         }
 
-        private async Task<Stream> LoadDataAsync(CloudBlockBlob sourceBlob)
+        private async Task<Stream> LoadDataAsync(CloudBlockBlob sourceBlob, Stream destStream)
         {
             using (var sourceStream = sourceBlob.OpenRead())
             using (var archive = new ZipArchive(sourceStream))
@@ -117,21 +123,8 @@ namespace JsonToParquet.Functions
 
                 var serengetiData = JsonConvert.DeserializeObject<SerengetiData>(json);
 
-                _logger.LogInformation($"Images : {serengetiData.Images.Count} Annotations : {serengetiData.Annotations.Count}");
-
-                // Get Current Directory
-                string folderPath = "/Volumes/Microsoft/JsonToParquet/src/JsonToParquet.Functions/Files";
-
-                string filePath = Path.Combine(folderPath, entry.Name.Replace(".json", ".parquet"));
-
-                _logger.LogInformation($"File Path: {filePath}");
-
-
-                // create stream that is writable and seekable
-                var stream = new MemoryStream();
-
                 // Create parquet file
-                return await ParquetFileCreator.CreateParquetFileAsync(serengetiData, stream);
+                return await ParquetFileCreator.CreateParquetFileAsync(serengetiData, destStream, _logger, $"{entry.Name.Replace(".json", ".parquet")})");
             }
         }
     }

@@ -1,4 +1,5 @@
 using JsonToParquet.Functions.Models;
+using Microsoft.Extensions.Logging;
 using Parquet;
 using Parquet.Data;
 using Parquet.Schema;
@@ -7,7 +8,7 @@ namespace JsonToParquet.Functions.Services
 {
     public class ParquetFileCreator
     {
-        public static async Task<Stream> CreateParquetFileAsync(SerengetiData data, Stream fileStream)
+        public static async Task<Stream> CreateParquetFileAsync(SerengetiData data, Stream fileStream, ILogger _logger, string fileName)
         {
             var aggregatedJoin = data.Annotations
                 .Join(data.Images, a=>a.ImageId, i=>i.Id, (a,i)=>new {
@@ -143,6 +144,9 @@ namespace JsonToParquet.Functions.Services
             var seqNumFrames = new DataColumn(
                 (DataField)schema[20],
                 aggregatedJoin.Select(a => a.SeqNumFrames).ToArray());
+
+            _logger.LogInformation($"Writing {aggregatedJoin.Count} items to Parquet file {fileName}");
+
 
             // Write the data to a Parquet file
             using (ParquetWriter writer = await ParquetWriter.CreateAsync(schema, fileStream))

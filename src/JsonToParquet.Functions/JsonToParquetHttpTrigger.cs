@@ -71,7 +71,7 @@ namespace JsonToParquet.Functions
             {
                 var sourceBlob = sourceContainer.GetBlockBlobReference(file);
                 var destBlob = destDirectory.GetBlockBlobReference(file.Replace(".json.zip", ".parquet"));
-                
+
                 using (var stream = await destBlob.OpenWriteAsync())
                 {
                     await LoadDataAsync(sourceBlob, stream);
@@ -79,8 +79,9 @@ namespace JsonToParquet.Functions
                     _logger.LogInformation($"Uploading {file} to {destBlob.Uri}");
                     await stream.FlushAsync();
                 }
-            }
-
+            };
+            
+            
             return response;
         }
 

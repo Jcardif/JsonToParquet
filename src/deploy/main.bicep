@@ -6,7 +6,7 @@ var logAnalyticsName = substring('serengetiAnalytics${uniqueString(resourceGroup
 var appInsightsName = substring('serengetiAppInsights${uniqueString(resourceGroup().id)}', 0, 24)
 var appServiceplanName = substring('serengetiServicePlan${uniqueString(resourceGroup().id)}', 0, 24)
 var azureFunctionName = substring('serengetiFunctions${uniqueString(resourceGroup().id)}', 0, 24)
-var functionWorkerRuntime = 'dotnet'
+var functionWorkerRuntime = 'dotnet-isolated'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName

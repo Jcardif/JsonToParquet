@@ -30,7 +30,7 @@ namespace JsonToParquet.Functions
             var response = req.CreateResponse(HttpStatusCode.OK);
             
             response.Headers.Add("Content-Type", "application/json");
-
+            
             var destConnectionString = "";
 
             var sourceContainer = GetSourceContainer();

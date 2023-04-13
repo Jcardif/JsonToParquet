@@ -135,11 +135,8 @@ resource vault 'Microsoft.KeyVault/vaults@2023-02-01' = {
         }
       }
     ]
-    enabledForDeployment: false
-    enabledForDiskEncryption: false
-    enabledForTemplateDeployment: false
+    enabledForTemplateDeployment: true
     enableSoftDelete: false
-    enablePurgeProtection: false
     networkAcls: {
       bypass: 'AzureServices'
       defaultAction: 'Allow'

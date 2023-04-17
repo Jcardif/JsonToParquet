@@ -91,14 +91,14 @@ namespace JsonToParquet.Functions
             CloudStorageAccount destStorageAccount = CloudStorageAccount.Parse(destConnectionString);
 
             var destBlobClient = destStorageAccount.CreateCloudBlobClient();
-            var destContainer = destBlobClient.GetContainerReference("snapshot-serengeti");
+            var destContainer = destBlobClient.GetContainerReference("metadata");
 
             if (!await destContainer.ExistsAsync())
             {
                 await destContainer.CreateIfNotExistsAsync();
             }
 
-            var destDirectory = destContainer.GetDirectoryReference("metadata");
+            var destDirectory = destContainer.GetDirectoryReference("parquet");
 
 
             return destDirectory;

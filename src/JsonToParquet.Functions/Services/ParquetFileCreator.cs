@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using JsonToParquet.Functions.Models;
 using Microsoft.Extensions.Logging;
 using Parquet;
@@ -151,12 +152,10 @@ namespace JsonToParquet.Functions.Services
             // Write the data to a Parquet file
             using (ParquetWriter writer = await ParquetWriter.CreateAsync(schema, fileStream))
             {
-                writer.CompressionMethod = CompressionMethod.Zstd;
-                writer.CompressionLevel = System.IO.Compression.CompressionLevel.SmallestSize;
+                writer.CompressionLevel = CompressionLevel.SmallestSize;
 
                 using (ParquetRowGroupWriter groupWriter = writer.CreateRowGroup())
                 {
-
                     await groupWriter.WriteColumnAsync(sequenceLevelAnnotations);
                     await groupWriter.WriteColumnAsync(ids);
                     await groupWriter.WriteColumnAsync(categoryIds);
